@@ -42,19 +42,26 @@ def main():
                         type=int,
                         default=50,
                         help=("Number of songs to list in the top songs "
-                              "output. Defaults to 100. Set to -1 for max."))
+                              "output. Defaults to 50. Set to -1 for max."))
 
     parser.add_argument("-t", "--threshold",
                         type=int,
                         default=10,
                         help=("Only artists and songs with at least this "
-                              "number of listens will be shown."))
+                              "number of listens will be shown. "
+                              "Defaults to 10."))
 
     parser.add_argument("-o", "--output",
                         default="text",
                         choices=["text", "csv", "bar", "pie", "all"],
                         help=("The output type for the data. Options are "
-                              "'text', 'csv', 'bar', 'pie', and 'all'."))
+                              "'text', 'csv', 'bar', 'pie', and 'all'. "
+                              "Defaults to text."))
+
+    parser.add_argument("-x", "--hide_other",
+                        action="store_true",
+                        help=("Flag to hide the 'other' category "
+                              "when it's present in the data."))
 
     args = parser.parse_args()
 
@@ -81,6 +88,7 @@ def main():
     num_songs = args.songs
     threshold = args.threshold
     output_type = args.output.lower()
+    hide_other = args.hide_other
 
     data_files = []
     for dirpath, dirnames, filenames in os.walk(folder_path):
@@ -103,10 +111,10 @@ def main():
     artist_data = get_artist_data(folder_path, data_files, extended_history)
 
     # Get a list of artist names sorted by most listens.
-    sorted_artists = get_top_artists(artist_data, threshold)
+    sorted_artists = get_top_artists(artist_data, threshold, hide_other)
 
     # Get a list of all the songs by most listens.
-    top_songs_list = get_top_songs(artist_data, threshold)
+    top_songs_list = get_top_songs(artist_data, threshold, hide_other)
 
     # Make sure the requested number of artists and songs are not greater than
     # the available number of artists and songs.
@@ -114,7 +122,6 @@ def main():
         num_artists = len(sorted_artists) - 1
     elif num_artists > len(sorted_artists) - 1:
         num_artists = len(sorted_artists) - 1
-
 
     if num_songs == -1:
         num_songs = len(top_songs_list) - 1

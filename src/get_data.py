@@ -62,13 +62,14 @@ def get_artist_data(folder, filenames, extended_history):
 
     return artist_data
 
-def get_top_artists(artist_data, threshold):
+def get_top_artists(artist_data, threshold, hide_other):
     """Return a list of artists sorted by most listens."""
     filtered = []
     other = {
         "name": "- Other -",
         "listens": 0,
-        "time_listened": 0
+        "time_listened": 0,
+        "song_data": {}
     }
 
     for artist_stats in artist_data.values():
@@ -77,14 +78,16 @@ def get_top_artists(artist_data, threshold):
         else:
             other["listens"] += artist_stats["listens"]
             other["time_listened"] += artist_stats["time_listened"]
+            other["song_data"] |= artist_stats["song_data"]
 
     # Put other in even if it's below the threshold.
-    if other["listens"] > 0:
+    if other["listens"] > 0 and not hide_other:
         filtered.append(other)
 
+    filtered.sort(key=itemgetter("time_listened"), reverse=True)
     return sorted(filtered, key=itemgetter("listens"), reverse=True)
 
-def get_top_songs(artist_data, threshold):
+def get_top_songs(artist_data, threshold, hide_other):
     """Return a list of songs sorted by most to least listens."""
     filtered = []
     other = {
@@ -103,7 +106,8 @@ def get_top_songs(artist_data, threshold):
                 other["time_listened"] += song_stats["time_listened"]
 
     # Put other in even if it's below the threshold.
-    if other["listens"] > 0:
+    if other["listens"] > 0 and not hide_other:
         filtered.append(other)
 
+    filtered.sort(key=itemgetter("time_listened"), reverse=True)
     return sorted(filtered, key=itemgetter("listens"), reverse=True)

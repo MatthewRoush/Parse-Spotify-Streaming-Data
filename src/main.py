@@ -1,67 +1,101 @@
 import os
 import sys
 import argparse
-from get_data import (get_artist_data, get_top_artists, get_top_songs)
+from get_data import get_artist_data, get_top_artists, get_top_songs
 from tools import *
 from output_text import output_text
-from output_bar import output_bar
 from output_csv import output_csv
 from output_pie import output_pie
 
 def main():
-    parser = argparse.ArgumentParser(
-        prog = "main.py",
-        description = "Parse Spotify data files.")
+    parser = argparse.ArgumentParser(description = "Parse Spotify data files. Album data is only available in extended streaming history data.")
 
-    parser.add_argument("-p", "--path",
-                        help=("Path to folder or file. "
-                              "Put in single or double quotes if the "
-                              "path contains spaces. "
-                              "If left empty then try to use the last path "
-                              "that was used."))
+    parser.add_argument(
+        "-p", "--path",
+        help  = "Path to folder or file. If left empty then try to use the last path that was used."
+    )
 
-    parser.add_argument("-e", "--extended",
-                        action="store_true",
-                        help=("Flag for parsing extended streaming history "
-                              "files. Defaults to false."))
+    parser.add_argument(
+        "-e", "--extended",
+        action = "store_true",
+        help   = "Parse extended streaming history."
+    )
 
-    parser.add_argument("-a", "--artists",
-                        type=int,
-                        default=10,
-                        help=("Number of artists to use for the top artists "
-                              "output. Defaults to 10. Set to -1 for max."))
+    parser.add_argument(
+        "-x", "--hide_other",
+        action = "store_true",
+        help   = "Hide the 'other' category when it's present in the data."
+    )
 
-    parser.add_argument("-i", "--songs-per",
-                        type=int,
-                        default=3,
-                        help=("Number of songs to list under each artist. "
-                              "Defaults to 3. Set to -1 for max. "
-                              "Not used for graphs."))
+    parser.add_argument(
+        "-b", "--sort-by-time",
+        action = "store_true",
+        help   = "Sort by time listened instead of number of listens."
+    )
 
-    parser.add_argument("-s", "--songs",
-                        type=int,
-                        default=50,
-                        help=("Number of songs to list in the top songs "
-                              "output. Defaults to 50. Set to -1 for max."))
+    parser.add_argument(
+        "-a", "--artists",
+        type    = int,
+        default = 10,
+        help    = "Number of artists to use for the top artists output. Defaults to %(default)s. Set to -1 for max."
+    )
 
-    parser.add_argument("-t", "--threshold",
-                        type=int,
-                        default=10,
-                        help=("Only artists and songs with at least this "
-                              "number of listens will be shown. "
-                              "Defaults to 10."))
+    parser.add_argument(
+        "-n", "--songs-per",
+        type    = int,
+        default = 3,
+        help    = "Number of songs to list under each artist. Defaults to %(default)s. Set to -1 for max. Not used for graphs."
+    )
 
-    parser.add_argument("-o", "--output",
-                        default="text",
-                        choices=["text", "csv", "bar", "pie", "all"],
-                        help=("The output type for the data. Options are "
-                              "'text', 'csv', 'bar', 'pie', and 'all'. "
-                              "Defaults to text."))
+    parser.add_argument(
+        "-m", "--albums-per",
+        type    = int,
+        default = 1,
+        help    = "Number of albums to list under each artist. Defaults to %(default)s. Set to -1 for max. Not used for graphs."
+    )
 
-    parser.add_argument("-x", "--hide_other",
-                        action="store_true",
-                        help=("Flag to hide the 'other' category "
-                              "when it's present in the data."))
+    parser.add_argument(
+        "-s", "--songs",
+        type    = int,
+        default = 50,
+        help    = "Number of songs to list in the top songs output. Defaults to %(default)s. Set to -1 for max."
+    )
+
+    parser.add_argument(
+        "-u", "--albums",
+        type    = int,
+        default = 15,
+        help    = "Number of albums to list in the top albums output. Defaults to %(default)s. Set to -1 for max."
+    )
+
+    parser.add_argument(
+        "-t", "--threshold",
+        type    = int,
+        default = 10,
+        help    = "Only artists, songs, and albums with at least this many listens will be included in the data. Defaults to %(default)s."
+    )
+
+    parser.add_argument(
+        "-o", "--output",
+        default = ["text"],
+        nargs   = "*",
+        choices = ["text", "csv", "pie", "all"],
+        help    = "The output type for the data. Defaults to %(default)s."
+    )
+
+    parser.add_argument(
+        "-i", "--image-type",
+        default = ["png"],
+        nargs   = "*",
+        choices = ["png", "svg", "all"],
+        help    = "The image type to save the pie graphs as. Defaults to %(default)s."
+    )
+
+    parser.add_argument(
+        "-g", "--interactive-graphs",
+        action = "store_true",
+        help   = "Open interactive graphs in the default web browser."
+    )
 
     args = parser.parse_args()
 
@@ -74,21 +108,32 @@ def main():
             folder_path = last_used_path
         else:
             print("There is no saved path, so --path can't be left empty.")
-            return
+            sys.exit(1)
     else:
         folder_path = args.path
 
     if not os.path.exists(folder_path):
-        print("Path does not exist.")
-        return
+        print(f"Path does not exist, '{folder_path}'")
+        sys.exit(1)
 
-    extended_history = args.extended
-    num_artists = args.artists
-    num_songs_per_artist = args.songs_per
-    num_songs = args.songs
-    threshold = args.threshold
-    output_type = args.output.lower()
-    hide_other = args.hide_other
+    extended_history      = args.extended
+    num_artists           = args.artists
+    num_songs_per_artist  = args.songs_per
+    num_albums_per_artist = args.albums_per
+    num_songs             = args.songs
+    num_albums            = args.albums
+    threshold             = args.threshold
+    output_types          = args.output
+    hide_other            = args.hide_other
+    sort_by_time          = args.sort_by_time
+    image_types           = args.image_type
+    show_graphs           = args.interactive_graphs
+
+    if "all" in output_types:
+        output_types = ["text", "csv", "pie"]
+
+    if "all" in image_types:
+        image_types = ["png", "svg"]
 
     data_files = []
     for dirpath, dirnames, filenames in os.walk(folder_path):
@@ -98,8 +143,7 @@ def main():
                 if filename.startswith("endsong"):
                     data_files.append(filename)
             else:
-                # User account data files containing listening history start
-                # with "StreamingHistory".
+                # User account data files containing listening history start with "StreamingHistory".
                 if filename.startswith("StreamingHistory"):
                     data_files.append(filename)
 
@@ -108,53 +152,48 @@ def main():
     print("\nCollecting Data...")
 
     # Get artist data.
-    artist_data = get_artist_data(folder_path, data_files, extended_history)
-
-    # Get a list of artist names sorted by most listens.
-    sorted_artists = get_top_artists(artist_data, threshold, hide_other)
-
-    # Get a list of all the songs by most listens.
-    top_songs_list = get_top_songs(artist_data, threshold, hide_other)
-
-    # Make sure the requested number of artists and songs are not greater than
-    # the available number of artists and songs.
-    if num_artists == -1:
-        num_artists = len(sorted_artists) - 1
-    elif num_artists > len(sorted_artists) - 1:
-        num_artists = len(sorted_artists) - 1
-
-    if num_songs == -1:
-        num_songs = len(top_songs_list) - 1
-    elif num_songs > len(top_songs_list) - 1:
-        num_songs = len(top_songs_list) - 1
+    top_artists, top_songs, top_albums, date_range = get_artist_data(
+            folder       = folder_path,
+            filenames    = data_files,
+            ext_hist     = extended_history,
+            threshold    = threshold,
+            num_artists  = num_artists,
+            songs_per    = num_songs_per_artist,
+            albums_per   = num_albums_per_artist,
+            num_songs    = num_songs,
+            num_albums   = num_albums,
+            hide_other   = hide_other,
+            sort_by_time = sort_by_time
+    )
 
     # Make sure there's an output folder.
     if not os.path.exists("output"):
         os.mkdir("output")
 
-    if output_type == "text":
-        output_text(sorted_artists, top_songs_list, num_artists,
-                    num_songs_per_artist, num_songs)
-    elif output_type == "csv":
-        output_csv(sorted_artists, top_songs_list, num_artists,
-                   num_songs_per_artist, num_songs)
-    elif output_type == "bar":
-        output_bar(sorted_artists, top_songs_list, num_artists, num_songs)
-    elif output_type == "pie":
-        output_pie(sorted_artists, top_songs_list, num_artists, num_songs)
-    elif output_type == "all":
-        output_text(sorted_artists, top_songs_list, num_artists,
-                    num_songs_per_artist, num_songs)
+    print("\nCreating Output Files...")
 
-        output_csv(sorted_artists, top_songs_list, num_artists,
-                   num_songs_per_artist, num_songs)
-
-        output_bar(sorted_artists, top_songs_list, num_artists, num_songs)
-
-        output_pie(sorted_artists, top_songs_list, num_artists, num_songs)
-    else:
-        print(f"Output type '{output_type}' is invalid.")
-        return
+    if "text" in output_types:
+        output_text(
+            top_artists,
+            top_songs,
+            top_albums,
+            date_range
+        )
+    if "csv" in output_types:
+        output_csv(
+            top_artists,
+            top_songs,
+            top_albums
+        )
+    if "pie" in output_types:
+        output_pie(
+            top_artists,
+            top_songs,
+            top_albums,
+            sort_by_time,
+            image_types,
+            show_graphs
+        )
 
     print("\nData Exported.")
 

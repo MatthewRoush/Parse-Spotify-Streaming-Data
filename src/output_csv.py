@@ -2,57 +2,38 @@ import os
 import io
 from tools import *
 
-def output_csv(sorted_artists, top_songs_list, num_artists,
-               num_songs_per_artist, num_songs):
+def output_csv(top_artists, top_songs, top_albums):
     """Output data as a csv file."""
-    top_artists_output = io.StringIO()
 
-    header = "Artist / Song,Listens,Time Listened\n"
-    top_artists_output.write(header)
-
-    for i, artist_stats in enumerate(sorted_artists[:num_artists]):
-        top_artists_output.write(f"\"{i + 1}. {artist_stats['name']}\",")
-        top_artists_output.write(f"\"{pretty(artist_stats['listens'])}\",")
-        top_artists_output.write(
-            ms_to_readable(artist_stats["time_listened"]) + "\n")
-
-        k = 0
-        for song_stats in top_songs_list:
-            # Continue if the song isn't by the current artist.
-            if song_stats["artist"] != artist_stats["name"]:
-                continue
-
-            top_artists_output.write(f"\"{k+ 1}. {song_stats['name']}\",")
-            top_artists_output.write(f"\"{pretty(song_stats['listens'])}\",")
-            top_artists_output.write(
-                ms_to_readable(song_stats["time_listened"]) + "\n")
-
-            k += 1
-            if k == num_songs_per_artist:
-                break
-
-        top_artists_output.write("\n")
-
-    top_artists_output = top_artists_output.getvalue()
-
-    top_songs_output = io.StringIO()
-
-    header = "Song,Listens,Time Listened,Artist\n"
-    top_songs_output.write(header)
-
-    for i, song_stats in enumerate(top_songs_list[:num_songs]):
-        top_songs_output.write(f"\"{i + 1}. {song_stats['name']}\",")
-        top_songs_output.write(f"\"{pretty(song_stats['listens'])}\",")
-        top_songs_output.write(
-            ms_to_readable(song_stats["time_listened"]) + ",")
-        top_songs_output.write(f"\"{song_stats['artist']}\"\n")
-
-    top_songs_output = top_songs_output.getvalue()
-
+    top_artists_output = generate_output(top_artists, "Artist")
     path = os.path.join("output", "Top Artists.csv")
     with open(path, "w", encoding="UTF-8") as f:
         f.write(top_artists_output)
 
+    top_songs_output = generate_output(top_songs, "Song", True)
     path = os.path.join("output", "Top Songs.csv")
     with open(path, "w", encoding="UTF-8") as f:
         f.write(top_songs_output)
+
+    if top_albums:
+        top_albums_output = generate_output(top_albums, "Album", True)
+        path = os.path.join("output", "Top Albums.csv")
+        with open(path, "w", encoding="UTF-8") as f:
+            f.write(top_albums_output)
+
+def generate_output(data, name, list_artist = False):
+    output = io.StringIO()
+    output.write(f"{name},Listens,Time Listened,Days Listened")
+    if list_artist:
+        output.write(",Artist")
+    output.write("\n")
+
+    for i, stats in enumerate(data):
+        output.write(get_line(i, stats, list_artist))
+    return output.getvalue()
+
+def get_line(index, data, list_artist):
+    line = f"\"{index + 1}. {data['name']}\",{data['listens']},{ms_to_readable(data['time_listened'])},{data['days_listened']}"
+    if list_artist:
+        line += f",\"{data['artist']}\""
+    return line + "\n"

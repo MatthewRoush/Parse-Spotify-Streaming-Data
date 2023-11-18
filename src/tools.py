@@ -19,7 +19,32 @@ def ms_to_readable(ms):
     hh, mm = divmod(mm, 60)
     dd, hh = divmod(hh, 24)
 
-    return f"{dd}d:{hh}h:{mm}m:{ss}s:{ms}ms"
+    ms_fmt = zero_pad(ms, 3) + "ms"
+
+    if dd > 0:
+        return f"{str(dd)}d:{zero_pad(hh)}h:{zero_pad(mm)}m:{zero_pad(ss)}s.{ms_fmt}"
+    elif hh > 0:
+        return f"{str(hh)}h:{zero_pad(mm)}m:{zero_pad(ss)}s.{ms_fmt}"
+    elif mm > 0:
+        return f"{str(mm)}m:{zero_pad(ss)}s.{ms_fmt}"
+    else:
+        return f"{str(ss)}s.{ms_fmt}"
+
+def zero_pad(num, len_goal = 2):
+    num = str(num)
+    if len(num) == len_goal:
+        return num
+    else:
+        return "0" * (len_goal - len(num)) + num
 
 def pretty(num):
     return format(num, ",")
+
+def format_date(date):
+    return date.strftime("%m/%d/%Y")
+
+def get_amount(total, target):
+    if target == -1:
+        return total
+    else:
+        return min(total, target)

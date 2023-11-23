@@ -137,11 +137,21 @@ def main():
 
     data_files = []
     for dirpath, dirnames, filenames in os.walk(folder_path):
+        # Extended streaming history files used to start with 'endsong', now they start with 'Streaming_History_Audio'.
+        old = True
+        for fn in filenames:
+            if fn.startswith("Streaming_History_Audio"):
+                old = False
+                break
+
         for filename in filenames:
             if extended_history:
-                # Extended streaming history files start with "endsong".
-                if filename.startswith("endsong"):
-                    data_files.append(filename)
+                if old:
+                    if filename.startswith("endsong"):
+                        data_files.append(filename)
+                else:
+                    if filename.startswith("Streaming_History_Audio"):
+                        data_files.append(filename)
             else:
                 # User account data files containing listening history start with "StreamingHistory".
                 if filename.startswith("StreamingHistory"):
